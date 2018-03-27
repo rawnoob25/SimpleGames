@@ -126,7 +126,8 @@ def gameDirectionsScreen(canvas):
     l4 = 'and direction. Respond using the arrow keys. The questions will'
     l5 = 'be stated at the top of the screen. During the game, you may'
     l6 = 'click anywhere on screen to pause the game and these directions'
-    l7 = 'will be redisplayed.'
+    l7 = 'will be redisplayed. Click anywhere on the screen to start.'
+    
     lines = list((l1, l2, l3, l4, l5,l6,l7))
     startPos = (180, 190)
     for i in range(len(lines)):
