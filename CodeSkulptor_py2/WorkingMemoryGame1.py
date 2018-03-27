@@ -44,6 +44,8 @@ respondToKeys = False
 score = 0
 rdCt = 0
 gameOver = False
+directionsScreen = True
+gameStarted = False
 
 def reg_questions():
     q1 = 'size: smaller(left)? same(up)? bigger(right)?'
@@ -116,18 +118,34 @@ def disp_answer_status(canvas):
         
 def disp_score(canvas):
     canvas.draw_text('Score:'+str(score), SCORE_POS, 20, 'White')
+
+def gameDirectionsScreen(canvas):
+    l1 = 'You will be presented with a series of sets of moving circles'
+    l2 = 'and be asked to compare any set of circles with the set before'
+    l3 = 'it on the bases of circle size, number of circles, color,'
+    l4 = 'and direction. Respond using the arrow keys. The questions will'
+    l5 = 'be stated at the top of the screen. During the game, you may'
+    l6 = 'click anywhere on screen to pause the game and these directions'
+    l7 = 'will be redisplayed.'
+    lines = list((l1, l2, l3, l4, l5,l6,l7))
+    startPos = (180, 190)
+    for i in range(len(lines)):
+        canvas.draw_text(lines[i], (startPos[0], startPos[1]+40*i), 18, 'White')
         
 # Handler to draw on canvas
 def draw(canvas):
-    if not gameOver:
-        if big_circle_visible:
-            canvas.draw_circle(big_circle_pos, big_rad, big_circle_line_width, big_circle_color)
-        draw_small_circles(canvas)
-        disp_question(canvas)
-        disp_answer_status(canvas)
-        disp_score(canvas)
+    if directionsScreen:
+        gameDirectionsScreen(canvas)
     else:
-        canvas.draw_text('Final Score: '+str(score), FINAL_SCORE_POS, 40, 'White')
+        if not gameOver:
+            if big_circle_visible:
+                canvas.draw_circle(big_circle_pos, big_rad, big_circle_line_width, big_circle_color)
+            draw_small_circles(canvas)
+            disp_question(canvas)
+            disp_answer_status(canvas)
+            disp_score(canvas)
+        else:
+            canvas.draw_text('Final Score: '+str(score), FINAL_SCORE_POS, 40, 'White')
 #compares number of circles in this screen with
 #the number in the last screen; takes into account
 #the player's response and sets answer_status
@@ -148,7 +166,7 @@ def cmpCircles(key):
             answer_status = CORRECT
     if answer_status == CORRECT:
         global score
-        score+=10	
+        score+=10   
         
 def cmpSizes(key):
     global answer_status
@@ -182,7 +200,7 @@ def cmpColors(key):
     if answer_status == CORRECT:
         global score
         score+=10
-        
+
 def cmpDirections(key):
     global answer_status
     answer_status = WRONG
@@ -216,21 +234,19 @@ def handleGameoverScreenTimer():
     
 ##TODO: change if-else clause to use switch
 def handleKeyPress(key):
-    if gameOver or (not respondToKeys):
+    if directionsScreen or gameOver or (not respondToKeys):
         return
-    
     if key not in [simplegui.KEY_MAP['left'], simplegui.KEY_MAP['up'],
                    simplegui.KEY_MAP['right']]: #ignore if not up, down or right
         #arrows
         return 
-    
     if question in [REG_Qs['color'], REG_Qs['direction']]:
         if key not in [simplegui.KEY_MAP['left'], simplegui.KEY_MAP['up']]:
             return
 #below lines useful for debugging   
-##    print last_state 
-##    print curr_state
-##    print '------------------------------------'
+    print last_state 
+    print curr_state
+    print '------------------------------------'
      
     if question == REG_Qs['number']:
         cmpCircles(key)
@@ -251,11 +267,10 @@ def handleKeyPress(key):
         gameover_screen_timer.start()
         return
     nxt_state()
-    
-    
-def run():
-    frame = simplegui.create_frame("Working Memory Game 1", c_width, c_height)
-    frame.set_draw_handler(draw)
+
+##starts the game
+def start():
+    global frame
     frame.set_keydown_handler(handleKeyPress)
     global initialScreenTimer
     initialScreenTimer = simplegui.create_timer(4000,handleTimer)
@@ -264,6 +279,23 @@ def run():
     answer_status_timer = simplegui.create_timer(800, handleAnswerStatusTimer)
     global gameover_screen_timer 
     gameover_screen_timer = simplegui.create_timer(2000, handleGameoverScreenTimer)
+    
+def handleClick(x):
+    global directionsScreen
+    directionsScreen = not directionsScreen
+    global gameStarted
+    if not gameStarted:
+        gameStarted = True
+        start()
+
+#displays screen with directions. This screen is the entry point into the game    
+def run():
+    global frame
+    frame = simplegui.create_frame("Working Memory Game 1", c_width, c_height)
+    frame.set_draw_handler(draw)
+    frame.set_mouseclick_handler(handleClick)
     frame.start()
+
+
 run()
 
