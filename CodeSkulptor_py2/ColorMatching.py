@@ -24,12 +24,14 @@ MEANING = 'Meaning'
 TEXT_COLOR = 'Text Color'
 SCORE_POS = (CV_WD/2, 40)
 SCORE_TEXT_SIZE = 20
+TIME_STATUS_POS = (CV_WD - 120, 40)
+TIME_STATUS_SIZE = 20
 
 #program variables
+started = False
 answer_correct = False
 answer_status_visible = False
-num_correct = 0
-num_answered = 0
+timed = False
 
 #For telling user which keys correspond to which selections
 class UserHelp:
@@ -137,26 +139,36 @@ class Check:
 
 # Handler to draw on canvas
 def draw(canvas):
-    u.draw(canvas)
-    leftBoxTR = (MAIN_PANEL_POS[0] - BOX_SEP/2, MAIN_PANEL_POS[1] - BOX_HT/2)
-    canvas.draw_polygon([leftBoxTR,
-                         (leftBoxTR[0] - BOX_WD, leftBoxTR[1]), 
-                         (leftBoxTR[0] - BOX_WD, leftBoxTR[1] + BOX_HT),
-                         (leftBoxTR[0], leftBoxTR[1] + BOX_HT)], 
-                        1, 'White') #left box coords listed in order: top-right, top-left, bottom-left, bottom-right
-    rightBoxTL = (MAIN_PANEL_POS[0] + BOX_SEP/2, MAIN_PANEL_POS[1] - BOX_HT/2)
-    canvas.draw_polygon([rightBoxTL, (rightBoxTL[0]+ BOX_WD, rightBoxTL[1]), 
-                         (rightBoxTL[0] + BOX_WD, rightBoxTL[1] + BOX_HT),
-                         (rightBoxTL[0], rightBoxTL[1] + BOX_HT)], 1, 'White') #right box coordsd listed in order:
-                         #top-left, top-right, bottom-right, bottom-left
-    if answer_status_visible:
-        if answer_correct:
-            check.draw(canvas)
-        else:
-            x.draw(canvas)
-    draw_colors(canvas)
-    draw_score(canvas)
-    
+    if started:
+        u.draw(canvas)
+        leftBoxTR = (MAIN_PANEL_POS[0] - BOX_SEP/2, MAIN_PANEL_POS[1] - BOX_HT/2)
+        canvas.draw_polygon([leftBoxTR,
+                             (leftBoxTR[0] - BOX_WD, leftBoxTR[1]), 
+                             (leftBoxTR[0] - BOX_WD, leftBoxTR[1] + BOX_HT),
+                             (leftBoxTR[0], leftBoxTR[1] + BOX_HT)], 
+                            1, 'White') #left box coords listed in order: top-right, top-left, bottom-left, bottom-right
+        rightBoxTL = (MAIN_PANEL_POS[0] + BOX_SEP/2, MAIN_PANEL_POS[1] - BOX_HT/2)
+        canvas.draw_polygon([rightBoxTL, (rightBoxTL[0]+ BOX_WD, rightBoxTL[1]), 
+                             (rightBoxTL[0] + BOX_WD, rightBoxTL[1] + BOX_HT),
+                             (rightBoxTL[0], rightBoxTL[1] + BOX_HT)], 1, 'White') #right box coordsd listed in order:
+                             #top-left, top-right, bottom-right, bottom-left
+        if answer_status_visible:
+            if answer_correct:
+                check.draw(canvas)
+            else:
+                x.draw(canvas)
+        draw_colors(canvas)
+        draw_score(canvas)
+    if timed:
+        canvas.draw_text('Time Left:'+str(time_remaining//60)+':'+pad(time_remaining%60),
+                        TIME_STATUS_POS, TIME_STATUS_SIZE, 'White')
+
+def pad(x):
+    if x>=10:
+        return str(x)
+    else:
+        return '0'+str(x)
+
 def handleColorSwitch():
     calc_color_vars()
 def draw_colors(canvas):
@@ -213,6 +225,8 @@ def changeAnswerStatusVisibility():
 
     
 def handleKeyUp(key):
+    if not started:
+        return 
     if key not in [simplegui.KEY_MAP['left'], simplegui.KEY_MAP['right']]:
         return
     global num_answered
@@ -245,6 +259,8 @@ def handleKeyUp(key):
     calc_color_vars()
     
 def changeUserTextColor(key):
+    if not started:
+        return
     global u
     if key  == simplegui.KEY_MAP['left']:
         u.changeNoTextColor('Yellow')
@@ -252,15 +268,34 @@ def changeUserTextColor(key):
         u.changeYesTextColor('Yellow')
     else:
         return
+    
 def practice():
-    pass
+    global started, num_correct, num_answered
+    num_correct = 0
+    num_answered = 0
+    started = True
+    calc_color_vars()
+
     
 def directions():
     pass
-    
-def start():
-    pass
 
+def updateTime():
+    global time_remaining
+    if time_remaining > 0:
+        time_remaining -= 1
+    
+
+def start():
+    global game_timer, started, time_remaining, timed, num_correct, num_answered
+    num_correct = 0
+    num_answered = 0
+    timed = True
+    time_remaining = 60
+    started = True
+    game_timer.start()
+    calc_color_vars()
+    
 
 
 
@@ -272,13 +307,11 @@ frame.add_button('(Re)Start', start, 100)
 frame.set_draw_handler(draw)
 frame.set_keyup_handler(handleKeyUp)
 frame.set_keydown_handler(changeUserTextColor)
-calc_color_vars()
 
 frame.start()
 
-
 answer_status_timer = simplegui.create_timer(500, changeAnswerStatusVisibility)
-
+game_timer = simplegui.create_timer(1000, updateTime)
 #colorTimer = simplegui.create_timer(1000, handleColorSwitch)
 #colorTimer.start()
 u = UserHelp((CV_WD/2, CV_HT-100), 1)
