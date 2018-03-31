@@ -1,4 +1,3 @@
-
 import simplegui
 import math
 import random
@@ -26,12 +25,15 @@ SCORE_POS = (CV_WD/2, 40)
 SCORE_TEXT_SIZE = 20
 TIME_STATUS_POS = (CV_WD - 120, 40)
 TIME_STATUS_SIZE = 20
+GAME_OVER_SCREEN_POS = (CV_WD/2 - 100, CV_HT/2)
 
 #program variables
 started = False
 answer_correct = False
 answer_status_visible = False
 timed = False
+keyHandlersDisabled = False
+gameOverScreen = False
 
 #For telling user which keys correspond to which selections
 class UserHelp:
@@ -139,6 +141,12 @@ class Check:
 
 # Handler to draw on canvas
 def draw(canvas):
+    global started, timed
+    if gameOverScreen:
+        started = False
+        timed = False
+        canvas.draw_text(str(num_correct)+' correct out of '+str(num_answered),
+                         GAME_OVER_SCREEN_POS, 30, 'White')
     if started:
         u.draw(canvas)
         leftBoxTR = (MAIN_PANEL_POS[0] - BOX_SEP/2, MAIN_PANEL_POS[1] - BOX_HT/2)
@@ -225,7 +233,7 @@ def changeAnswerStatusVisibility():
 
     
 def handleKeyUp(key):
-    if not started:
+    if not started or keyHandlersDisabled:
         return 
     if key not in [simplegui.KEY_MAP['left'], simplegui.KEY_MAP['right']]:
         return
@@ -259,7 +267,7 @@ def handleKeyUp(key):
     calc_color_vars()
     
 def changeUserTextColor(key):
-    if not started:
+    if not started or keyHandlersDisabled:
         return
     global u
     if key  == simplegui.KEY_MAP['left']:
@@ -270,7 +278,11 @@ def changeUserTextColor(key):
         return
     
 def practice():
-    global started, num_correct, num_answered
+    global started, num_correct, num_answered, gameOverScreen, timed
+    global keyHandlersDisabled
+    keyHandlersDisabled = False
+    gameOverScreen = False
+    timed = False
     num_correct = 0
     num_answered = 0
     started = True
@@ -281,13 +293,29 @@ def directions():
     pass
 
 def updateTime():
-    global time_remaining
+    if not timed:
+        return
+    global time_remaining, game_over_timer
     if time_remaining > 0:
         time_remaining -= 1
+    else:
+        global keyHandlersDisabled, u
+        keyHandlersDisabled = True
+        u.changeNoTextColor('White')
+        u.changeYesTextColor('White')
+        game_over_timer.start()
+        
+def gameOverTimer():
+    global game_over_timer
+    global gameOverScreen
+    gameOverScreen = True
+    game_over_timer.stop()
     
-
 def start():
-    global game_timer, started, time_remaining, timed, num_correct, num_answered
+    global game_timer, started, time_remaining, timed, num_correct, num_answered, gameOverScreen
+    global keyHandlersDisabled
+    keyHandlersDisabled = False
+    gameOverScreen = False
     num_correct = 0
     num_answered = 0
     timed = True
@@ -298,22 +326,25 @@ def start():
     
 
 
-
+#initialize ui
 frame = simplegui.create_frame("Color Matching Game", CV_WD, CV_HT)
 frame.add_button('Directions', directions, 100)
 frame.add_button('Practice', practice, 100)
 frame.add_button('(Re)Start', start, 100)
 
+#key and draw handlers
 frame.set_draw_handler(draw)
 frame.set_keyup_handler(handleKeyUp)
 frame.set_keydown_handler(changeUserTextColor)
 
 frame.start()
 
+#timers
 answer_status_timer = simplegui.create_timer(500, changeAnswerStatusVisibility)
 game_timer = simplegui.create_timer(1000, updateTime)
-#colorTimer = simplegui.create_timer(1000, handleColorSwitch)
-#colorTimer.start()
+game_over_timer = simplegui.create_timer(4000, gameOverTimer)
+
+#create global instance vars
 u = UserHelp((CV_WD/2, CV_HT-100), 1)
 x = X(MAIN_PANEL_POS, 1)
 check = Check(MAIN_PANEL_POS, 1)
