@@ -30,7 +30,8 @@ num_correct = 0
 
 def make_balls():
     #Note: after balls are made, the Red balls will be at the beginning of the list
-    global balls
+    global balls 
+    balls = []
     for i in range(NUM_BALLS):
         balls.append(Ball(BALL_RADIUS))
     random.shuffle(balls)
@@ -174,13 +175,17 @@ def changeBallDirection():
             ball.stop()
             startEval()
 def start():
-    global showCorrect
+    global showCorrect, clicks, num_correct , rds
     showCorrect = False
+    clicks = 0
+    num_correct = 0
+    rds = 0
     make_balls()
     global hide_reds_timer, ball_direction_timer
+    hide_reds_timer = simplegui.create_timer(1000, hideReds)
+    ball_direction_timer = simplegui.create_timer(1000, changeBallDirection)
     hide_reds_timer.start()
-frame = simplegui.create_frame('Remember the Reds', CV_WD,
-                               CV_HT)
+
 def medium():
     start()
 
@@ -188,8 +193,9 @@ def hard():
     global STEP
     STEP = 1.4
     start()
-hide_reds_timer = simplegui.create_timer(1000, hideReds)
-ball_direction_timer = simplegui.create_timer(1000, changeBallDirection)
+frame = simplegui.create_frame('Remember the Reds', CV_WD,
+                               CV_HT)
+
 frame.set_draw_handler(draw)
 frame.add_button('Medium', medium, 150)
 frame.add_button('Hard', hard, 150)
