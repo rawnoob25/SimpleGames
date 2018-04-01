@@ -22,6 +22,7 @@ SMALL_CIRCLE_LINE_WIDTH = 1
 QUESTION_POS = (220,40)
 ANSWER_STATUS_POS = (20, 40)
 SCORE_POS = (700, 40)
+TIME_LEFT_POS = (650, 80)
 FINAL_SCORE_POS = (c_width/2 - 100, c_height/2 - 30)
 
 #game status constants
@@ -42,7 +43,6 @@ last_state = None
 answer_status = ''
 respondToKeys = False
 score = 0
-rdCt = 0
 gameOver = False
 directionsScreen = True
 gameStarted = False
@@ -112,7 +112,8 @@ def handleTimer():
     initialScreenTimer.stop()
     global respondToKeys
     respondToKeys = True
-
+    global clock
+    clock.start()
 def disp_answer_status(canvas):
     canvas.draw_text(answer_status, ANSWER_STATUS_POS, 20, 'White') 
         
@@ -132,7 +133,16 @@ def gameDirectionsScreen(canvas):
     startPos = (180, 190)
     for i in range(len(lines)):
         canvas.draw_text(lines[i], (startPos[0], startPos[1]+40*i), 18, 'White')
-        
+
+def disp_time_left(canvas):
+    canvas.draw_text('Time Left:'+str(timeLeft//60)+':'+pad(timeLeft%60),
+                     TIME_LEFT_POS, 20, 'White')
+def pad(x):
+    if x>=10:
+        return str(x)
+    else:
+        return '0'+str(x)
+
 # Handler to draw on canvas
 def draw(canvas):
     if directionsScreen:
@@ -145,6 +155,7 @@ def draw(canvas):
             disp_question(canvas)
             disp_answer_status(canvas)
             disp_score(canvas)
+            disp_time_left(canvas)
         else:
             canvas.draw_text('Final Score: '+str(score), FINAL_SCORE_POS, 40, 'White')
 #compares number of circles in this screen with
@@ -167,7 +178,9 @@ def cmpCircles(key):
             answer_status = CORRECT
     if answer_status == CORRECT:
         global score
-        score+=10   
+        score += 10
+    else:
+        score -= 5
         
 def cmpSizes(key):
     global answer_status
@@ -185,8 +198,9 @@ def cmpSizes(key):
             answer_status = CORRECT
     if answer_status == CORRECT:
         global score
-        score+=10
-    
+        score += 10
+    else:
+        score -= 5
 def cmpColors(key):
     global answer_status
     answer_status = WRONG
@@ -200,8 +214,9 @@ def cmpColors(key):
             answer_status = CORRECT
     if answer_status == CORRECT:
         global score
-        score+=10
-
+        score += 10
+    else:
+        score -= 5
 def cmpDirections(key):
     global answer_status
     answer_status = WRONG
@@ -215,7 +230,9 @@ def cmpDirections(key):
             answer_status = CORRECT
     if answer_status == CORRECT:
         global score
-        score+=10    
+        score += 10
+    else:
+        score -= 5
         
 def handleAnswerStatusTimer():
     global answer_status_timer
@@ -261,14 +278,18 @@ def handleKeyPress(key):
         print 'invalid question:'+question
     global answer_status_timer
     answer_status_timer.start()
-    global rdCt 
-    rdCt += 1
-    if rdCt == MAX_RD_CT:
-        global gameover_screen_timer
-        gameover_screen_timer.start()
-        return
     nxt_state()
 
+def tick():
+    global timeLeft, respondToKeys
+    if not directionsScreen and timeLeft>0:
+        timeLeft -= 1
+    elif directionsScreen:
+        pass
+    else:
+        respondToKeys = False
+        global gameover_screen_timer
+        gameover_screen_timer.start()
 ##starts the game
 def start():
     global frame
@@ -280,6 +301,10 @@ def start():
     answer_status_timer = simplegui.create_timer(800, handleAnswerStatusTimer)
     global gameover_screen_timer 
     gameover_screen_timer = simplegui.create_timer(2000, handleGameoverScreenTimer)
+    global timeLeft
+    timeLeft = 60
+    global clock
+    clock = simplegui.create_timer(1000, tick)
     
 def handleClick(x):
     global directionsScreen
